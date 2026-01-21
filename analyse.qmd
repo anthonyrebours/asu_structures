@@ -1,0 +1,84 @@
+---
+title: "Untitled"
+format: html
+---
+
+```{r}
+library(tidyverse)
+library(ggraph)
+library(igraph)
+library(ggforce)
+library(vite)
+library(tidygraph)
+library(biblionetwork)
+library(widyr)
+
+asu_structures <- rio::import(here::here("data", "asu_structures.xlsx"))
+
+asu_membres <- 
+  c(
+    "Sorbonne Université", 
+    "Muséum national d'Histoire naturelle",
+    "Conservatoire National des Arts et Métiers",
+    "Université de Technologie de Compiègne",
+    "INSEAD"
+  )
+```
+
+
+
+```{r}
+asu_etablissements <- 
+  asu_structures %>% 
+  filter(
+    etablissement_relations == "parent" 
+    & etablissement_type != "government"
+  ) 
+
+edges <- 
+  asu_etablissements %>%
+  pairwise_count(etablissement, structure, upper = FALSE) %>% 
+  filter(item1 %in% asu_membres)
+
+nodes <- 
+  asu_etablissements %>%
+  distinct(etablissement) %>% 
+  filter(
+    etablissement %in% edges$item1 | etablissement %in% edges$item2
+  )
+  
+edges %>% 
+  graph_from_data_frame(vertices = nodes) %>% 
+  ggraph(layout = "stress") +
+  geom_edge_link(aes(edge_alpha = n, width = n), alpha = 0.3) +
+  scale_edge_width_continuous(range = c(0.1, 2)) +
+  geom_node_point(aes(colour = "red")) +
+  geom_node_text(aes(label = name)) +
+  theme_void() +
+  theme(legend.position = "none")
+```
+
+<br>
+
+```{r}
+su_structures <- 
+  asu_structures %>% 
+  filter(
+    etablissement == "Sorbonne Université"
+  ) 
+
+edges <-
+  su_structures %>% 
+  select(structure, etablissement, etablissement_relations)
+
+edges %>% 
+  graph_from_data_frame() %>% 
+  ggraph(layout = "stress") +
+  scale_edge_linetype_identity() +
+  geom_edge_link(aes(edge_linetype = etablissement_relations)) +
+  geom_node_point() +
+  geom_node_text(aes(label = name)) +
+  theme_void() +
+  theme(legend.position = "none")
+```
+
