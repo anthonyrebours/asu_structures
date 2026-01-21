@@ -68,7 +68,12 @@ asu_structures <-
 asu_structures <- 
   asu_structures %>% 
   unnest(associated_institutions, names_sep = "_")
-  
+
+## Extraction acronymes
+asu_structures <- 
+  asu_structures %>% 
+  unnest(display_name_acronyms) 
+
 ## Sélection et changement de nom variables
 asu_structures <- 
   asu_structures %>% 
@@ -82,7 +87,7 @@ asu_structures <-
     "etablissement" = associated_institutions_display_name,
     "etablissement_ror" = associated_institutions_ror,
     "etablissement_type" = associated_institutions_type,
-    "etalissement_relations" = associated_institutions_relationship
+    "etablissement_relations" = associated_institutions_relationship
   )
 
 
