@@ -27,7 +27,8 @@ list_structures <-
   oa_fetch(
   entity = "institutions",
   ror = asu_ror,
-  options = list(select = c("id", "associated_institutions")),
+  options = list(
+    select = c("id", "associated_institutions")),
   verbose = TRUE
 )
 
@@ -37,6 +38,12 @@ list_structures_id <-
   unnest(associated_institutions, names_sep = "_") %>% 
   pull(associated_institutions_id) %>% 
   unique()
+
+## Extraction métadonnées membres ASU
+asu_metadata <- 
+  list_structures %>% 
+  select(-associated_institutions) %>% 
+  unnest(display_name_acronyms)
 
 ## Requête données structures ASU
 asu_structures <- 
@@ -48,6 +55,8 @@ asu_structures <-
         "id", 
         "display_name",
         "display_name_acronyms",
+        "country_code",
+        "geo",
         "ror", 
         "ids",
         "type",
@@ -74,6 +83,11 @@ asu_structures <-
   asu_structures %>% 
   unnest(display_name_acronyms) 
 
+## Extraction informations localisation
+asu_structures <- 
+  asu_structures %>% 
+  unnest(geo, names_sep = "_")
+
 ## Sélection et changement de nom variables
 asu_structures <- 
   asu_structures %>% 
@@ -83,12 +97,18 @@ asu_structures <-
     "structure_acronyms" = display_name_acronyms,
     "structure_ror" = ror,
     "structure_wikidata" = wikidata,
+    "structure_pays" = geo_country,
+    "structure_code_pays" = country_code,
+    "structure_ville" = geo_city,
+    "structure_latitude" = geo_latitude,
+    "structure_longitude" = geo_longitude,
     "etablissement_id" = associated_institutions_id,
     "etablissement" = associated_institutions_display_name,
     "etablissement_ror" = associated_institutions_ror,
     "etablissement_type" = associated_institutions_type,
-    "etablissement_relations" = associated_institutions_relationship
-  )
+    "etablissement_relations" = associated_institutions_relationship,
+    "etablissement_code_pays" = associated_institutions_country_code
+  ) 
 
 
 # Sauvegarde --------------------------------------------------------------
