@@ -4,14 +4,17 @@ format: html
 ---
 
 ```{r}
-library(tidyverse)
-library(ggraph)
-library(igraph)
-library(ggforce)
-library(vite)
-library(tidygraph)
-library(biblionetwork)
-library(widyr)
+# Packages
+pacman::p_load(
+  tidyverse, 
+  ggraph, 
+  igraph,
+  ggforce,
+  vite, 
+  tidygraph,
+  biblionetwork,
+  widyr
+)
 
 asu_structures <- rio::import(here::here("data", "asu_structures.xlsx"))
 
@@ -22,6 +25,22 @@ asu_membres <-
     "Conservatoire National des Arts et Métiers",
     "Université de Technologie de Compiègne",
     "INSEAD"
+  )
+
+udice <- 
+  c(
+    "Aix-Marseille Université",
+    "Université Claude Bernard Lyon 1",
+    "Institut Polytechnique de Paris", 
+    "Université Côte d'Azur", 
+    "Université de Lorraine",
+    "Université Grenoble Alpes", 
+    "Université Paris Cité",
+    "Université Paris-Saclay",
+    "Université Paris Sciences et Lettres", 
+    "Université de Bordeaux", 
+    "Université de Montpellier", 
+    "Université de Strasbourg"
   )
 ```
 
@@ -45,18 +64,50 @@ nodes <-
   distinct(etablissement) %>% 
   filter(
     etablissement %in% edges$item1 | etablissement %in% edges$item2
+  ) %>% 
+  mutate(
+    reseau = case_when(
+      etablissement %in% asu_membres ~ "asu",
+      etablissement %in% udice ~ "udice",
+      TRUE ~ "autre"
+    )
   )
   
 edges %>% 
   graph_from_data_frame(vertices = nodes) %>% 
-  ggraph(layout = "stress") +
+  ggraph(layout = "fr") +
   geom_edge_link(aes(edge_alpha = n, width = n), alpha = 0.3) +
   scale_edge_width_continuous(range = c(0.1, 2)) +
-  geom_node_point(aes(colour = "red")) +
-  geom_node_text(aes(label = name)) +
+  geom_node_point(
+    aes(
+      colour = reseau, 
+      size = ifelse(
+        reseau == "asu", 
+        5, 
+        3
+      )
+    )
+  ) +
+  scale_colour_discrete("set2") +
+  geom_node_text(
+    aes(
+      label = ifelse(centrality_degree() > 1, name, NA),
+      size = centrality_degree()
+    )
+  ) +
   theme_void() +
-  theme(legend.position = "none")
+  theme(legend.position = "none") +
+  coord_cartesian(clip = "off") +
+  ragg::agg_png(
+    here::here("analyses", "co_tutelles_network.png"),
+    res = 500,
+    width = 8, 
+    height = 7, 
+    units = "in"
+  )
 ```
+
+![](co_tutelles_network.png){.lightbox}
 
 <br>
 
@@ -74,8 +125,7 @@ edges <-
 edges %>% 
   graph_from_data_frame() %>% 
   ggraph(layout = "stress") +
-  scale_edge_linetype_identity() +
-  geom_edge_link(aes(edge_linetype = etablissement_relations)) +
+  geom_edge_link() +
   geom_node_point() +
   geom_node_text(aes(label = name)) +
   theme_void() +
